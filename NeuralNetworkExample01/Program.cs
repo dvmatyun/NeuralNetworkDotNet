@@ -1,124 +1,116 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using NeuralNetworkExample01;
+using NeuralNetworkExample01.InputOperations;
+using NeuralNetworkExample01.NeuralNetworkRaw;
 using System.Text;
 
-Console.WriteLine("Hello, World!");
-/*
-var matrix1 = new MatrixNn(2, 1);
-for (int i = 0; i < 2; i++)
+Console.WriteLine("Program start");
+
+//PerceptronPrograms.RunSimplePerceptron();
+PerceptronPrograms.RunGamePerceptron();
+
+
+
+class PerceptronPrograms
 {
-    matrix1.Values[i, 0] = i + 1;
-}
-matrix1.PrintMatrix();
-Console.WriteLine("Matrix transpose:");
-var transposed = matrix1.Transpose();
-transposed.PrintMatrix();
-
-Console.WriteLine("Matrix multiply:");
-
-
-var matrix2 = new MatrixNn(1, 2);
-for (int i = 0; i < 2; i++)
-{
-    matrix2.Values[0, i] = i * 2 + 1;
-}
-matrix2.PrintMatrix();
-
-var multiplied = matrix1.MultiplyByMatrix(matrix2);
-multiplied.PrintMatrix();
-*/
-//
-
-/*
-var nnPerceptron = new NnPerceptronSimple(3, 2, 4);
-var features = new double[3] { 0.5, 0.2, 0.4};
-var output = new double[2] { 1, 1 };
-*/
-var nnPerceptron = new NnPerceptronSimple(3, 2, 8);
-/*
-var features = new double[2] { 0.5, 0.0 };
-var output = new double[1] { 1 };
-
-var matrixFeatures = new MatrixNn(features);
-var matrixOutput = new MatrixNn(output);
-
-// Write test file:
-var file = new System.IO.StreamWriter("features.csv");
-for (int i =0; i < 4; i++)
-{
-    file.WriteLine(nnPerceptron.GenerateExampleString());
-}
-file.Close();
-*/
-// Read file:
-
-var testInputes = new List<TestInput>();
-const Int32 BufferSize = 128;
-using (var fileStream = File.OpenRead("features_read.csv"))
-using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, true, BufferSize))
-{
-    String line;
-    while ((line = streamReader.ReadLine()) != null)
+    public static void WriteExampleInput()
     {
-        // Process line
-        var input = TestInput.ParseInput(line, 3, 2);
-        testInputes.Add(input);
+        var inputOperation = new InputOperations();
+        var exampleInputs = new List<TestInput>() { new TestInput(new MatrixNn(3, 1), new MatrixNn(2, 1)) };
+        inputOperation.WriteFile(exampleInputs, path: "example.csv");
     }
-}
 
-//Console.WriteLine("Matrix features:");
-//matrixFeatures.PrintMatrix();
-
-for (int i = 0; i < 100; i++)
-{
-    foreach (var input in testInputes)
+    public static void RunSimplePerceptron()
     {
-        var result = nnPerceptron.ForwardAndBackwardPropagation(input.Input, input.Output);
-        if (i % 10 == 0)
+        Console.WriteLine("RunSimplePerceptron start");
+        var nnPerceptron = new NnPerceptronSimple(3, 2, 8);
+        var inputOperation = new InputOperations();
+        var inputs = inputOperation.ReadFile();
+
+        for (int i = 0; i < 100; i++)
         {
-            Console.WriteLine($"> Error of prediction for #{i} (input={input.RawLine}): {String.Format("{0:0.000}", result.SumError)}");
+            foreach (var input in inputs)
+            {
+                var result = nnPerceptron.ForwardAndBackwardPropagation(input.Input, input.Output);
+                if (i % 10 == 0)
+                {
+                    Console.WriteLine($"> Error of prediction for #{i} (input={input.RawLine}): {String.Format("{0:0.000}", result.SumError)}");
+                }
+
+            }
         }
-        
+
+        var inputFinal = TestInput.ParseInput("0,2;0,2;0,4;1;0", 3, 2);
+        var resultFinal = nnPerceptron.ForwardPropagation(inputFinal.Input);
+        Console.WriteLine($"> Final prediction:");
+        resultFinal.LayerResults[1].SigmoidApplied.PrintMatrix();
     }
-}
-
-var inputFinal = TestInput.ParseInput("0,2;0,2;0,4;1;0", 3, 2);
-var resultFinal = nnPerceptron.ForwardPropagation(inputFinal.Input);
-Console.WriteLine($"> Final prediction:");
-resultFinal.LayerResults[1].SigmoidApplied.PrintMatrix();
-
-//var result = nnPerceptron.ForwardPropagation(matrixFeatures);
-/*
-for (int i = 0; i < 100; ++i)
-{
-    var result = nnPerceptron.ForwardAndBackwardPropagation(matrixFeatures, matrixOutput);
-    Console.WriteLine($"> Error of prediction: {result.SumError}");
-}
-*/
 
 
-//Console.WriteLine($"Result of propagation:");
-//result.ResultMatrix?.PrintMatrix();
-
-public class TestInput
-{
-    public MatrixNn Input { get; }
-    public MatrixNn Output { get; }
-
-    public string RawLine { get; set; } = string.Empty;
-
-    public TestInput(MatrixNn input, MatrixNn output)
+    public static void RunGamePerceptron()
     {
-        Input = input;
-        Output = output;
+        Console.WriteLine("RunGamePerceptron start");
+        var nnPerceptron = new NnPerceptronSimple(4, 2, 8);
+        var inputOperation = new InputOperations();
+        //var inputs = inputOperation.ReadFile();
+        const double ExploreRate = 0.5;
+
+        int turnsExpected = 40;
+        for (int i = 0; i < 1000; i++)
+        {
+            var game = new BuildingGame();
+            var state = game.State;
+            var nnActions = new List<NnPropagationResult>();
+
+            while (!state.GameEnded)
+            {
+                var input = state.AsInput();
+                var result = nnPerceptron.ForwardPropagation(input.Input);
+                var appliedResult = state.DoOutputAction(result.ResultMatrix!);
+                result.ResultApplied = appliedResult;
+                nnActions.Add(result);
+            }
+
+            double errorModifier = ((double)turnsExpected - (double)state.Turn + 1) / ((double)turnsExpected + (double)state.Turn);
+            var sigmoidError = NnConfig.Sigmoid(errorModifier);
+            if (turnsExpected >= state.Turn)
+            {
+                turnsExpected = state.Turn - 1;
+            }
+
+            bool isGameSuccessful = errorModifier > 0;
+            double sumError = 0;
+            var rand = new Random();
+
+            foreach (var e in nnActions)
+            {
+                var output = e.ResultMatrix!;
+                var highestActionIdx = output.FindIndexOfHighestValue();
+                var diffWithActual = e.ResultApplied!.ApplyFunctionIndexed((x, _, val) => {
+                    return x - output.Values[x, 0];
+                });
+
+                var expectedOutput = output.ApplyFunctionIndexed((x, _, val) =>
+                {
+                    var explore = rand.NextDouble() * ExploreRate;
+                    if (isGameSuccessful && x == highestActionIdx)
+                        return val + diffWithActual.Values[x,0];
+                    if (!isGameSuccessful && x != highestActionIdx)
+                        return Math.Clamp(val + explore + diffWithActual.Values[x, 0], 0, 1);
+                    return val * sigmoidError + diffWithActual.Values[x, 0];
+                });
+                nnPerceptron.BackwardPropagation(e, expectedOutput);
+                nnPerceptron.ApplyWeightsChange(e);
+                sumError += Math.Abs(e.SumError);
+            }
+
+            Console.WriteLine($" > Game#{i} ended in {state.Turn} turns (sumError = {sumError}, isGameSuccessful = {isGameSuccessful})");
+        }
+
+        //var inputFinal = TestInput.ParseInput("0,2;0,2;0,4;1;0", 3, 2);
+        //var resultFinal = nnPerceptron.ForwardPropagation(inputFinal.Input);
+        //Console.WriteLine($"> Final prediction:");
+        //resultFinal.LayerResults[1].SigmoidApplied.PrintMatrix();
     }
 
-    public static TestInput ParseInput(string line, int features, int outputs)
-    {
-        var splitted = line.Split(';').Select(double.Parse).ToArray();
-        var featuresRead = splitted.Take(features).ToArray();
-        var outputRead = splitted.TakeLast(outputs).ToArray();
-        var input = new TestInput(new MatrixNn(featuresRead), new MatrixNn(outputRead)) { RawLine = line };
-        return input;
-    }
 }

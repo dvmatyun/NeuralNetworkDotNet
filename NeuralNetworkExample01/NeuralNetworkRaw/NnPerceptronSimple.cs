@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using NeuralNetworkExample01.NeuralNetworkRaw;
+using System.Text;
 
 namespace NeuralNetworkExample01
 {

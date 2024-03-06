@@ -1,8 +1,7 @@
 ﻿using System;
 
-namespace NeuralNetworkExample01
+namespace NeuralNetworkExample01.NeuralNetworkRaw
 {
-
     public class MatrixNn
     {
         public double[,] Values { get; }
@@ -10,7 +9,7 @@ namespace NeuralNetworkExample01
         public int Rows { get => Values.GetLength(0); }
         public int Columns { get => Values.GetLength(1); }
 
-        public MatrixNn(int rows, int columns) 
+        public MatrixNn(int rows, int columns)
         {
             Values = new double[rows, columns];
         }
@@ -56,6 +55,19 @@ namespace NeuralNetworkExample01
             return newMatrix;
         }
 
+        public MatrixNn ApplyFunctionIndexed(Func<int,int, double, double> valueTransform)
+        {
+            var newMatrix = new MatrixNn(Rows, Columns);
+            for (int i = 0; i < Rows; ++i)
+            {
+                for (int j = 0; j < Columns; ++j)
+                {
+                    newMatrix.Values[i, j] = valueTransform(i, j, Values[i, j]);
+                }
+            }
+            return newMatrix;
+        }
+
         public MatrixNn SubstractMatrixes(MatrixNn other)
         {
             if (Columns != other.Columns || Rows != other.Rows)
@@ -80,7 +92,7 @@ namespace NeuralNetworkExample01
             int cA = A.GetLength(1);
             if (rA == 1 && cA == 1)
             {
-                var singleValue = Values[0,0];
+                var singleValue = Values[0, 0];
                 var result = other.ApplyFunction((e) => e * singleValue);
                 return result;
             }
@@ -118,6 +130,25 @@ namespace NeuralNetworkExample01
                 return new MatrixNn(kHasil);
             }
         }
+
+
+        public int FindIndexOfHighestValue()
+        {
+            int actionIndex = 0;
+            double maxWeight = 0;
+            // Detecting action with maximum weight:
+            for (int i = 0; i < Rows; ++i)
+            {
+                var weight = Values[i, 0];
+                if (weight > maxWeight)
+                {
+                    actionIndex = i;
+                    maxWeight = weight;
+                }
+            }
+            return actionIndex;
+        }
+
         public void PrintMatrix()
         {
             var matrix = Values;

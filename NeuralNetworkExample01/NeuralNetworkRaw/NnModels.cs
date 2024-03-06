@@ -1,4 +1,6 @@
-﻿namespace NeuralNetworkExample01
+﻿using NeuralNetworkExample01.NeuralNetworkRaw;
+
+namespace NeuralNetworkExample01
 {
     public class NnConfig
     {
@@ -54,7 +56,7 @@
 
         private const int WeightGeneratorNum = 100;
 
-        public void CorrectWeights(MatrixNn delta, double learningRate = 10)
+        public void CorrectWeights(MatrixNn delta, double learningRate = 0.1)
         {
             var newDelta = delta.ApplyFunction((e) => e * learningRate);
             Neurons = Neurons.SubstractMatrixes(newDelta);
@@ -88,6 +90,8 @@
         public double SumError { get; set; }
 
         public MatrixNn? ResultMatrix { get; set; }
+
+        public MatrixNn? ResultApplied { get; set; }
 
         public double ExpectedResult { get; set; } // True value for learning
 
