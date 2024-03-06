@@ -31,7 +31,7 @@ class PerceptronPrograms
         {
             foreach (var input in inputs)
             {
-                var result = nnPerceptron.ForwardAndBackwardPropagation(input.Input, input.Output);
+                var result = nnPerceptron.ForwardAndBackwardPropagation(input.Input, input.Output, learningRate: 10);
                 if (i % 10 == 0)
                 {
                     Console.WriteLine($"> Error of prediction for #{i} (input={input.RawLine}): {String.Format("{0:0.000}", result.SumError)}");
@@ -50,67 +50,66 @@ class PerceptronPrograms
     public static void RunGamePerceptron()
     {
         Console.WriteLine("RunGamePerceptron start");
-        var nnPerceptron = new NnPerceptronSimple(4, 2, 8);
+        var nnPerceptron = new NnPerceptronSimple(7, 4, new List<int> { 4 });
         var inputOperation = new InputOperations();
         //var inputs = inputOperation.ReadFile();
-        const double ExploreRate = 0.5;
+        
 
-        int turnsExpected = 40;
-        for (int i = 0; i < 1000; i++)
+           
+        int turnsExpected = 100;
+        int prevTurnResult = 100;
+
+        int avgGameTurns = 200;
+
+        const int iterations = 20;
+        int cyclesDone = iterations;
+        // Genetic algorithm
+        var bestPopulation = new List<BuildingGameNeuro>();
+        
+        
+        for (int i = 0; i < iterations; ++i)
         {
-            var game = new BuildingGame();
-            var state = game.State;
-            var nnActions = new List<NnPropagationResult>();
-
-            while (!state.GameEnded)
+            AddNewPopulationToList(bestPopulation, iterations, turnsExpected);
+            var nextGen = new List<BuildingGameNeuro>();
+            foreach (var e in bestPopulation)
             {
-                var input = state.AsInput();
-                var result = nnPerceptron.ForwardPropagation(input.Input);
-                var appliedResult = state.DoOutputAction(result.ResultMatrix!);
-                result.ResultApplied = appliedResult;
-                nnActions.Add(result);
+                var gen = BuildingGameNeuro.RunGame(e.Perceptron, turnsExpected);
+                nextGen.Add(gen);
             }
-
-            double errorModifier = ((double)turnsExpected - (double)state.Turn + 1) / ((double)turnsExpected + (double)state.Turn);
-            var sigmoidError = NnConfig.Sigmoid(errorModifier);
-            if (turnsExpected >= state.Turn)
+            bestPopulation.AddRange(nextGen);
+            bestPopulation = bestPopulation.OrderBy(e => e.Game.State.Turn).ToList();
+            bestPopulation = bestPopulation.Take(cyclesDone).ToList();
+            var bestState = bestPopulation.First().Game.State;
+            var worstState = bestPopulation.Last().Game.State;
+            Console.WriteLine($"Gen #{i} Best result: {bestState.Turn} Turns (Bad actions: {bestState.ActionsDone[3]})" +
+                $", worst result: {worstState.Turn} Turns (Bad actions: {worstState.ActionsDone[3]})");
+            
+            /*
+            Mutate here:
+            for (int j = 0; j < bestPopulation.Count; ++j)
             {
-                turnsExpected = state.Turn - 1;
             }
-
-            bool isGameSuccessful = errorModifier > 0;
-            double sumError = 0;
-            var rand = new Random();
-
-            foreach (var e in nnActions)
-            {
-                var output = e.ResultMatrix!;
-                var highestActionIdx = output.FindIndexOfHighestValue();
-                var diffWithActual = e.ResultApplied!.ApplyFunctionIndexed((x, _, val) => {
-                    return x - output.Values[x, 0];
-                });
-
-                var expectedOutput = output.ApplyFunctionIndexed((x, _, val) =>
-                {
-                    var explore = rand.NextDouble() * ExploreRate;
-                    if (isGameSuccessful && x == highestActionIdx)
-                        return val + diffWithActual.Values[x,0];
-                    if (!isGameSuccessful && x != highestActionIdx)
-                        return Math.Clamp(val + explore + diffWithActual.Values[x, 0], 0, 1);
-                    return val * sigmoidError + diffWithActual.Values[x, 0];
-                });
-                nnPerceptron.BackwardPropagation(e, expectedOutput);
-                nnPerceptron.ApplyWeightsChange(e);
-                sumError += Math.Abs(e.SumError);
-            }
-
-            Console.WriteLine($" > Game#{i} ended in {state.Turn} turns (sumError = {sumError}, isGameSuccessful = {isGameSuccessful})");
+            */
+            cyclesDone -= 1;
         }
+
+        //Console.WriteLine($" > Minimum turns game: {turnsExpected}");
 
         //var inputFinal = TestInput.ParseInput("0,2;0,2;0,4;1;0", 3, 2);
         //var resultFinal = nnPerceptron.ForwardPropagation(inputFinal.Input);
         //Console.WriteLine($"> Final prediction:");
         //resultFinal.LayerResults[1].SigmoidApplied.PrintMatrix();
+    }
+
+    public static void AddNewPopulationToList(List<BuildingGameNeuro> list, int iterations, int turnsExpected)
+    {
+        // Initial population:
+        for (int i = 0; i < iterations; ++i)
+        {
+            var gameResult = BuildingGameNeuro.RunGame(new NnPerceptronSimple(7, 4, new List<int> { 8, 16 }), turnsExpected);
+            list.Add(gameResult);
+            //Console.WriteLine($" > Game#{i} ended in {gameResult.Game.State.Turn} turns");
+        }
     }
 
 }

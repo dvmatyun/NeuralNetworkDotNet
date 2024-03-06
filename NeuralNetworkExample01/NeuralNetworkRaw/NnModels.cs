@@ -9,15 +9,23 @@ namespace NeuralNetworkExample01
         public int Inputs { get; }
         public int Outputs { get; }
 
-        public NnConfig(int inputAmount = 2, int hiddenAmount = 3, int outputAmount = 1) 
+        public NnConfig(List<int> hiddenLayers, int inputAmount = 2, int outputAmount = 1) 
         {
-            var inputLayer = new NnLayer(inputAmount, hiddenAmount);
-            var hiddenLayer = new NnLayer(hiddenAmount, outputAmount);
+            var inputLayer = new NnLayer(inputAmount, hiddenLayers.First());
             Layers = new Dictionary<int, NnLayer>
             {
                 { 0, inputLayer },
-                { 1, hiddenLayer }
+                //{ 1, hiddenLayer }
             };
+
+            for (int i = 0; i < hiddenLayers.Count; i++)
+            {
+                int nextAmount = i == (hiddenLayers.Count - 1) ? outputAmount : hiddenLayers[i + 1];
+                var hiddenLayer = new NnLayer(hiddenLayers[i], nextAmount);
+                Layers[i + 1] = hiddenLayer;
+            }
+            
+            
             Inputs = inputAmount;
             Outputs = outputAmount;
         }

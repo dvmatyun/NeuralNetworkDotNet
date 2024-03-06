@@ -11,7 +11,12 @@ namespace NeuralNetworkExample01
 
         public NnPerceptronSimple(int inputs, int outputs, int hidden)
         {
-            Config = new NnConfig(inputs, hidden, outputs);
+            Config = new NnConfig(new List<int> { hidden }, inputs, outputs);
+        }
+
+        public NnPerceptronSimple(int inputs, int outputs, List<int> hiddenLayers)
+        {
+            Config = new NnConfig(hiddenLayers, inputs, outputs);
         }
         #region Public
 
@@ -63,11 +68,11 @@ namespace NeuralNetworkExample01
             return result;
         }
 
-        public NnPropagationResult ForwardAndBackwardPropagation(MatrixNn features, MatrixNn expectedOutput)
+        public NnPropagationResult ForwardAndBackwardPropagation(MatrixNn features, MatrixNn expectedOutput, double learningRate = 1)
         {
             var forwardResult = ForwardPropagation(features);
             var backwardResult = BackwardPropagation(forwardResult, expectedOutput);
-            ApplyWeightsChange(backwardResult);
+            ApplyWeightsChange(backwardResult, learningRate);
             return backwardResult;
         }
 
@@ -160,7 +165,7 @@ namespace NeuralNetworkExample01
             return result;
         }
 
-        public void ApplyWeightsChange(NnPropagationResult result)
+        public void ApplyWeightsChange(NnPropagationResult result, double learningRate = 1)
         {
             for (int i = 0; i < result.LayerResults.Count; ++i)
             {
@@ -171,7 +176,7 @@ namespace NeuralNetworkExample01
                 if (layerResult == null)
                     throw new ArgumentException($"Layer result with index={i} not found!");
 
-                layer.CorrectWeights(layerResult.DeltaWeight!);
+                layer.CorrectWeights(layerResult.DeltaWeight!, learningRate);
                 //var newWeights = 
             }
         }
