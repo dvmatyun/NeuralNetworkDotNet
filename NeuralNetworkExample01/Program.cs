@@ -1,16 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-using NeuralNetworkExample01;
+﻿using NeuralNetworkExample01;
 using NeuralNetworkExample01.InputOperations;
 using NeuralNetworkExample01.NeuralNetworkRaw;
-using System.Text;
 
 Console.WriteLine("Program start");
 
-//PerceptronPrograms.RunSimplePerceptron();
-PerceptronPrograms.RunGamePerceptron();
-
-
-
+PerceptronPrograms.RunSimplePerceptron();
+//PerceptronPrograms.RunGamePerceptron();
+ 
 class PerceptronPrograms
 {
     public static void WriteExampleInput()
@@ -23,49 +19,58 @@ class PerceptronPrograms
     public static void RunSimplePerceptron()
     {
         Console.WriteLine("RunSimplePerceptron start");
-        var nnPerceptron = new NnPerceptronSimple(3, 2, 8);
-        var inputOperation = new InputOperations();
-        var inputs = inputOperation.ReadFile();
+        var inputLines = new List<string>() 
+        {
+            "0;1;0",
+            "1;0;0",
+            "0;0;0",
+            "1;1;1"
+        };
 
-        for (int i = 0; i < 100; i++)
+        var nnPerceptron = new NnPerceptronSimple(2, 1, 5);
+        var inputOperation = new InputOperations();
+        //var inputs = inputOperation.ReadFile();
+        var inputs = inputOperation.ParseInputs(inputLines, 2, 1);
+
+        var graphs = new Dictionary<string, List<string>>();
+
+        for (int i = 0; i < 1000; i++)
         {
             foreach (var input in inputs)
             {
-                var result = nnPerceptron.ForwardAndBackwardPropagation(input.Input, input.Output, learningRate: 10);
-                if (i % 10 == 0)
-                {
-                    Console.WriteLine($"> Error of prediction for #{i} (input={input.RawLine}): {String.Format("{0:0.000}", result.SumError)}");
-                }
+                var forwardResult = nnPerceptron.ForwardPropagation(input.Input);
+                var result = nnPerceptron.BackwardPropagation(forwardResult, input.Output);
+                nnPerceptron.ApplyWeightsChange(result, 1);
 
+                var formattedResult = String.Format("{0:0.000}", result.SumError);
+                inputOperation.WriteResultToDictionary(graphs, input.ToCsvString(), formattedResult);
+
+                if (i % 10 == 0)
+                    Console.WriteLine($"> Error of prediction for #{i} (input={input.RawLine}): {formattedResult}");
             }
         }
+        inputOperation.WriteGraphsToFiles(graphs);
 
-        var inputFinal = TestInput.ParseInput("0,2;0,2;0,4;1;0", 3, 2);
+        // Check result for custom input:
+        var inputFinal = TestInput.ParseInput("0;1;0", 2, 1);
         var resultFinal = nnPerceptron.ForwardPropagation(inputFinal.Input);
         Console.WriteLine($"> Final prediction:");
         resultFinal.LayerResults[1].SigmoidApplied.PrintMatrix();
     }
 
+    
 
     public static void RunGamePerceptron()
     {
         Console.WriteLine("RunGamePerceptron start");
         var nnPerceptron = new NnPerceptronSimple(7, 4, new List<int> { 4 });
         var inputOperation = new InputOperations();
-        //var inputs = inputOperation.ReadFile();
-        
-
-           
         int turnsExpected = 100;
-        int prevTurnResult = 100;
-
-        int avgGameTurns = 200;
 
         const int iterations = 20;
         int cyclesDone = iterations;
         // Genetic algorithm
         var bestPopulation = new List<BuildingGameNeuro>();
-        
         
         for (int i = 0; i < iterations; ++i)
         {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace NeuralNetworkExample01.InputOperations
 {
@@ -24,6 +20,24 @@ namespace NeuralNetworkExample01.InputOperations
             file.Close();
         }
 
+
+        public void WriteGraphsToFiles(Dictionary<string, List<string>> graphs)
+        {
+            foreach (var graph in graphs)
+            {
+                var file = new System.IO.StreamWriter(graph.Key + ".txt");
+                for (var i = 0; i < graph.Value.Count; ++i)
+                {
+                    file.WriteLine(graph.Value[i]);
+                }
+                
+                file.Close();
+            }
+            
+        }
+
+        //graphs
+
         public List<TestInput> ReadFile()
         {
             var testInputes = new List<TestInput>();
@@ -40,6 +54,30 @@ namespace NeuralNetworkExample01.InputOperations
                 }
             }
             return testInputes;
+        }
+
+        public List<TestInput> ParseInputs(List<string> lines, int features, int outputs)
+        {
+            var result = new List<TestInput>();
+            foreach (var line in lines)
+            {
+                // Process line
+                var input = TestInput.ParseInput(line, features, outputs);
+                result.Add(input);
+            }
+            return result;
+        }
+
+        public void WriteResultToDictionary(Dictionary<string, List<string>> map, string key, string value)
+        {
+            if (map.ContainsKey(key))
+            {
+                map[key].Add(value);
+            }
+            else
+            {
+                map[key] = new List<string> { value };
+            }
         }
     }
 }

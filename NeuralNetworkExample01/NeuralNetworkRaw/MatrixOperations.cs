@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace NeuralNetworkExample01.NeuralNetworkRaw
 {
@@ -147,6 +148,24 @@ namespace NeuralNetworkExample01.NeuralNetworkRaw
                 }
             }
             return actionIndex;
+        }
+
+        public string StringInterpretation
+        {
+            get
+            {
+                var sb = new StringBuilder();
+                for (int i = 0; i < Rows; i++)
+                {
+                    for (int j = 0; j < Columns; j++)
+                    {
+                        sb.Append(Values[i, j] + ",");
+                        
+                    }
+                    sb.Append(";");
+                }
+                return sb.ToString();
+            }
         }
 
         public void PrintMatrix()
