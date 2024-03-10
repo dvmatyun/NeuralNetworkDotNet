@@ -19,6 +19,8 @@ class PerceptronPrograms
     public static void RunSimplePerceptron()
     {
         Console.WriteLine("RunSimplePerceptron start");
+
+        // Mark (RSP 1)
         var inputLines = new List<string>() 
         {
             "0;1;0",
@@ -27,20 +29,19 @@ class PerceptronPrograms
             "1;1;1"
         };
 
+        // Mark (RSP 2)
         var nnPerceptron = new NnPerceptronSimple(2, 1, 5);
         var inputOperation = new InputOperations();
-        //var inputs = inputOperation.ReadFile();
         var inputs = inputOperation.ParseInputs(inputLines, 2, 1);
-
         var graphs = new Dictionary<string, List<string>>();
 
         for (int i = 0; i < 1000; i++)
         {
             foreach (var input in inputs)
             {
-                var forwardResult = nnPerceptron.ForwardPropagation(input.Input);
-                var result = nnPerceptron.BackwardPropagation(forwardResult, input.Output);
-                nnPerceptron.ApplyWeightsChange(result, 1);
+                var forwardResult = nnPerceptron.ForwardPropagation(input.Input); // (RSP 3)
+                var result = nnPerceptron.BackwardPropagation(forwardResult, input.Output); // (RSP 4)
+                nnPerceptron.ApplyWeightsChange(result, 1); // (RSP 5)
 
                 var formattedResult = String.Format("{0:0.000}", result.SumError);
                 inputOperation.WriteResultToDictionary(graphs, input.ToCsvString(), formattedResult);

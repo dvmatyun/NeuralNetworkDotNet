@@ -118,8 +118,8 @@ namespace NeuralNetworkExample01
         public int IndexMath { get => Index + 1; }
 
         public MatrixNn LayerInput { get; } // what came from previous layer
-        public MatrixNn WeightsApplied { get; } // a_idx
-        public MatrixNn SigmoidApplied { get; } // z_idx
+        public MatrixNn WeightsApplied { get; } // a_idx, A matrix
+        public MatrixNn SigmoidApplied { get; } // z_idx, Z matrix
 
         public MatrixNn? HelperDelta { get; set; }
         public MatrixNn? DeltaWeight { get; set; }

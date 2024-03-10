@@ -24,6 +24,7 @@ namespace NeuralNetworkExample01
         {
             var result = new NnPropagationResult(features);
 
+
             var previousSigmoid = features;
             for (int l = 0; l < Config.Layers.Count; ++l)
             {
@@ -36,13 +37,12 @@ namespace NeuralNetworkExample01
                     layer.Neurons.PrintMatrix();
                     Console.WriteLine($"Input for layer={l}:");
                     previousSigmoid.PrintMatrix();
-                    //previousSigmoid
                 }
 
-                //Console.WriteLine("Transposed weights matrix:");
                 var weights = layer.NeuronsTransposed;
-                //weights.PrintMatrix();
 
+                // Step (F1) for forward propagation if l == 0
+                // Step (F3) for forward propagation if l == 1
                 var z_idx = weights.MultiplyByMatrix(previousSigmoid);
 
                 if (ShowPrints)
@@ -50,7 +50,9 @@ namespace NeuralNetworkExample01
                     Console.WriteLine($"Output of layer #{l}:");
                     z_idx.PrintMatrix();
                 }
-                
+
+                // Step (F2) for forward propagation  if l == 0
+                // Step (F4) for forward propagation  if l == 1
                 var a_idx = z_idx.ApplyFunction(NnConfig.Sigmoid);
 
                 if (ShowPrints)
@@ -89,6 +91,7 @@ namespace NeuralNetworkExample01
                 if (layerResult == null)
                     throw new ArgumentException($"Layer result with index={l} not found!");
 
+                // Step (B1)
                 var sigmaDeriv = layerResult.WeightsApplied.ApplyFunction(NnConfig.SigmoidDerivative);
 
                 MatrixNn? helperDelta;
@@ -102,14 +105,17 @@ namespace NeuralNetworkExample01
                         layerResult.LayerInput.PrintMatrix();
                     }
 
-
+                    // Step (B2.1)
                     helperDelta = layerResult.SigmoidApplied.SubstractMatrixes(expectedOutput);
                     double error = 0;
+
+                    // Step (B3.1)
                     for (int i = 0; i < helperDelta.Rows; i++)
                     {
                         error += helperDelta.Values[i, 0];
                         helperDelta.Values[i, 0] = helperDelta.Values[i, 0] * sigmaDeriv.Values[i, 0];
                     }
+
                     result.SumError = error;
                     if (ShowPrints)
                     {
@@ -127,31 +133,19 @@ namespace NeuralNetworkExample01
 
                     MatrixNn? d_1;
                     var helperDeltaPrevious = layerResultNext.HelperDelta;
+
+                    // Step (B2.2)
                     d_1 = layerNext.Neurons.MultiplyByMatrix(helperDeltaPrevious!);
-                    //Console.WriteLine("d_1:");
-                    //d_1.PrintMatrix();
+
+                    // Step (B3.2)
                     var multipliedD2 = MultiplyRowsByValues(d_1.Values, sigmaDeriv.Values);
                     var multipliedMatrix = new MatrixNn(multipliedD2);
-                    //Console.WriteLine("d_1 multiplied:");
-                    //multipliedMatrix.PrintMatrix();
                     helperDelta = multipliedMatrix;
                     
-                    //helperDelta = transposedD1.MultiplyByMatrix(sigmaDeriv);
-
-                    /*
-                    Console.WriteLine("prev delta:");
-                    helperDeltaPrevious!.PrintMatrix();
-                    Console.WriteLine("weigts:");
-                    layerNext.Neurons.PrintMatrix();
-                    Console.WriteLine("sigma deriv:");
-                    sigmaDeriv.PrintMatrix();
-                    */
-                    //Console.WriteLine("helper result matrix:");
-                    //helperDelta.PrintMatrix();
                 }
                 layerResult.HelperDelta = helperDelta;
 
-                // Differencial:
+                // Step (B4) Weights differencial:
                 var dWeight = helperDelta.MultiplyByMatrix(layerResult.LayerInput.Transpose());
                 layerResult.DeltaWeight = dWeight.Transpose();
                 if (ShowPrints)
@@ -176,6 +170,7 @@ namespace NeuralNetworkExample01
                 if (layerResult == null)
                     throw new ArgumentException($"Layer result with index={i} not found!");
 
+                // Step (B5) correcting weights
                 layer.CorrectWeights(layerResult.DeltaWeight!, learningRate);
                 //var newWeights = 
             }
